@@ -126,21 +126,16 @@ if __name__ == "__main__":
     df = data.iloc[:,:-1]
     labels = data.iloc[:, -1]
 
-    """
     # single query
     lsh_data = RandomProjectionLSH(data=df, hash_length=64, nnn=1)
     candidates = lsh_data.query(3) # find the bins which potential candidates lie in
     exact_matches = lsh_data.exact_matching(select_index=3, candidate_indices=candidates, feature_indices=[]) # use exact matching; bitwise comparison of patterns
-    """
-
-    """
+    
     # evaluate LSH over different hash_lengths
     for hash_length in [16,32,64,128,256,512,1024]: 
         simhash = RandomProjectionLSH(data=df, hash_length=hash_length, nnn=1, evaluation_labels=labels)
         print(f"CKS using hash length {hash_length} is: {simhash.evaluate_lsh()}")
-    """
-
-    """
+   
     # evaluate LSH query time over different hash lengths
     for hash_length in [32,64,128,512,1024]: 
         simhash = RandomProjectionLSH(data=df, hash_length=hash_length, nnn=1)
@@ -150,9 +145,7 @@ if __name__ == "__main__":
             candidates = simhash.query(i)
             #simhash.exact_matching(select_index=i, candidate_indices=candidates, feature_indices=[])
         print(f"Time to query 100 patterns from 2000 cells without exact match from using model with hash length of {hash_length}: {time.time()-start}")
-    """
-
-    """
+    
     # evaluate LSH query time over different number of cells
     numCells = 2000
     subset = np.random.choice(range(2000), numCells)
@@ -166,8 +159,8 @@ if __name__ == "__main__":
     for i in range(100):
         simhash.query(i)
     print(f"Time to query 100 patterns from reference of {numCells} cells: {time.time()-start}")
-    """
-    """
+   
+    
     # evaluate time to construct LSH over different number of cells
     numCells = 500
     subset = np.random.choice(range(2000), numCells)
@@ -178,4 +171,4 @@ if __name__ == "__main__":
     start = time.time()
     simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length, nnn=1)
     print(f"Time to construct the LSH model from reference of {numCells} cells: {time.time()-start}")
-    """
+    
