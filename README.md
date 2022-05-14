@@ -9,3 +9,6 @@ Implements locality sensitive hashing using SimHash hash function. Returns the i
 
 ## Requirements/Compatibility
 Python 3.9.12
+
+## Usage
+The code for all the evaluations/tests described are present in the main function. 
