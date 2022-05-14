@@ -12,3 +12,6 @@ Python 3.9.12
 
 ## Usage
 The code for all the evaluations/tests described are present in the main function. 
+
+## NOTE
+Implementation of LSH algorithm are modified from https://github.com/dataplayer12/Fly-LSH
