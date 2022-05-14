@@ -15,3 +15,4 @@ The code for all the evaluations/tests described are present in the main functio
 
 ## Reference
 referenced https://github.com/dataplayer12/Fly-LSH to help implement SimHash
+referenced https://github.com/XuegongLab/DenseFly4scRNAseq/ to generate simulated scRNA-seq data
