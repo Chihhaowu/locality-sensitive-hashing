@@ -240,7 +240,7 @@ if __name__ == "__main__":
         simhash.query(i)
     print(f"Time to query 100 patterns from reference of {numCells} cells: {time.time()-start}")
    
-    # evaluate time to construct LSH over different number of cells
+    ##### evaluate time to construct LSH over different number of cells
     numCells = 500
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
