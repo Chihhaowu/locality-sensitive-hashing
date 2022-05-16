@@ -21,18 +21,16 @@ class RandomProjectionLSH():
         # for evaluation
         self.labels = evaluation_labels
         self.numLabels = np.unique(self.labels).shape[0]
-
+    
+    # assort cells/expression profiles based on their hash values into different bins; each bin contains all
+    # similar expression vectors with the same hash value. Two dictionaries are also create to support multibin search
     def bin_hashes(self): 
-        """
-        Create the bins for each hash value, then assort the
-        queries into each of the bins
-        """
-        self.distinct_hashes = np.unique(self.hashes, axis=0) # unique hash values
+        self.distinct_hashes = np.unique(self.hashes, axis=0)
         numBins = self.distinct_hashes.shape[0]
         numRows = self.data.shape[0]
 
-        hashBin = np.zeros(numRows, dtype=np.int16) # np.zeros is more memory efficient than list; is data.shape same as unique_hashes.shape?
-        for binNum, hash in enumerate(self.distinct_hashes): # assort each row into bin according to hash value
+        hashBin = np.zeros(numRows, dtype=np.int16)
+        for binNum, hash in enumerate(self.distinct_hashes):
             _bin = (self.hashes == hash).all(axis=1)
             for idx in np.flatnonzero(_bin):
                 hashBin[idx] = binNum
