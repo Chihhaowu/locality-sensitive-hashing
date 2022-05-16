@@ -8,7 +8,11 @@ from sklearn.metrics import confusion_matrix, cohen_kappa_score
 class RandomProjectionLSH():
 
     def __init__(self, data, hash_length, evaluation_labels=None):
-        
+        """
+        data:  MxN expression matrix, M cells with N genes
+        hash_length: size of the hash value
+        evaluation_labels: labels of cell types (for evaluation)
+        """
         # for functionality
         self.data_as_dataframe = data
         data = np.array(data)
@@ -23,7 +27,7 @@ class RandomProjectionLSH():
         self.numLabels = np.unique(self.labels).shape[0]
     
     # assort cells/expression profiles based on their hash values into different bins; each bin contains all
-    # similar expression vectors with the same hash value. Two dictionaries are also create to support multibin search
+    # similar expression vectors with the same hash value. Two dictionaries are also create to support multibin search.
     def bin_hashes(self): 
         self.distinct_hashes = np.unique(self.hashes, axis=0)
         numBins = self.distinct_hashes.shape[0]
@@ -46,7 +50,7 @@ class RandomProjectionLSH():
         if new_pattern.size != self.weights.shape[0]:
             raise ValueError("Invalid length, did not add new pattern to table")
 
-        corrected_count_vector = new_pattern - np.mean(new_pattern) # correct the input count vector
+        corrected_count_vector = new_pattern - np.mean(new_pattern)
         bv_new_pattern = (corrected_count_vector@self.weights) >= 0
         new_cell = max(self.cells_assignedToBins.keys()) + 1
         
@@ -69,17 +73,21 @@ class RandomProjectionLSH():
         bin = i-1
         self.cells_assignedToBins[new_cell] = [bin]
         self.bins_whichCells[bin] = np.append(self.bins_whichCells[bin], new_cell)
-       
+     
+    # perform query of a vector of gene expression counts, looking at multiple bins that contain cells with similar
+    # expression profiles. Searching consists of obtaining the hash value of the query and finding the hash values (bins)
+    # that differ by some (small) number of bits; these other bins potentially contain cells with expression profiles 
+    # that match that of the query. Returns a reduced set of indices from which an exact pattern search can be performed.
     def query(self, select_index: int, search_tolerance=1):
         """
         multibin query in the form of searching using one of the rows as the query pattern
         lookup-based; queries are guaranteed to have at least one match
         """
         query_hash_bin = self.cells_assignedToBins[select_index] # based on lookup, what is the bin/corresponding hash
-        query_hash = self.distinct_hashes[query_hash_bin] # compute or lookup the hash value of a cell
+        query_hash = self.distinct_hashes[query_hash_bin] # compute (for querying non-reference cells) or lookup the hash value of a cell
 
-        bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1)# bitwise, how much does the query hash value differ from other bins
-        restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance)# return the indices of the bins which difference is within defined tolerances
+        bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1) 
+        restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance) 
         candidates_from_bins = [self.bins_whichCells[i] for i in restricted_bins]
         candidate_matches = reduce(np.union1d, candidates_from_bins)
 
