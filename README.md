@@ -1,4 +1,4 @@
-# LSH
+# Locality Sensitive Hashing
 
 ## Description
 **Question**: Given a large single-cell expression matrix E of dimensions M×N, where M is the number of cells and N is the number of reference genes. The goal of this project is to develop an efficient query scheme or index to allow for “expression pattern” queries, alternatively cell searching, taking vectors that represent gene expression counts as input. Read more: https://hackmd.io/@PI7Og0l1ReeBZu_pjQGUQQ/Hyhdz86J5
