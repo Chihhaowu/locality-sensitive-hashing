@@ -12,10 +12,10 @@ class RandomProjectionLSH():
         # for functionality
         self.data_as_dataframe = data
         data = np.array(data)
-        self.data = data - np.mean(data, axis=1, keepdims=True) # with correction
+        self.data = data - np.mean(data, axis=1, keepdims=True) # correction of gene expression counts, suggested in DenseFly and FlyHash
         numFeatures = data.shape[1]
         self.weights = SupportFunctions.dense_gaussian(numFeatures, hash_length)
-        self.hashes = (self.data@self.weights)>=0 # obtained by the dot product of each point to the normal of each hyperplane
+        self.hashes = (self.data@self.weights)>=0
         self.bin_hashes()
 
         # for evaluation
@@ -35,13 +35,12 @@ class RandomProjectionLSH():
             for idx in np.flatnonzero(_bin):
                 hashBin[idx] = binNum
 
-        self.cells_assignedToBins = {cell: bin for cell, bin in enumerate(hashBin)} # which bin has a cell been assigned to
-        self.bins_whichCells = {bin: np.flatnonzero(hashBin == bin) for bin in range(numBins)} # which cells are present in each bin
-
-    """
-    given some new expression profiles, hash and obtain the encoded bit vector, then append it
-    to the table storing the bit vectors
-    """
+        self.cells_assignedToBins = {cell: bin for cell, bin in enumerate(hashBin)}
+        self.bins_whichCells = {bin: np.flatnonzero(hashBin == bin) for bin in range(numBins)}
+  
+    # given some new cell/expression vector, hash and obtain the encoded bit vector. If the hash table has already
+    # been associated with cell(s) in the reference, add the new cell to the same bin. Otherwise, create a new bin
+    # and place in it the new cell.
     def update_hash_table(self, new_pattern: np.ndarray):
     
         if new_pattern.size != self.weights.shape[0]:
