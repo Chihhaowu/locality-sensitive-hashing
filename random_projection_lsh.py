@@ -93,20 +93,21 @@ class RandomProjectionLSH():
 
         return candidate_matches
 
+    # similar to query. However, now consider that instead of caring about the counts of all genes, that we can ignore
+    # the expression of some genes. At a high-level, what we want to do is to identify cells exhibiting more general patterns 
+    # of gene expression. To do this, we consider the following approach. Since the expression of some genes are no longer relevant,
+    # it is possible that cells that are not similar (when graphed, are distantly located) could have a similar expression pattern for
+    # the genes that consider as important to define similarity. Here, we take the query and create several other queries where, at the
+    # indices, of "non-important" genes, we sample randomly from a normal distribution N(mean expression of the gene, stddev). By doing
+    # this, we ask for nearest neighbors several subspaces to find candidate matches. Then, similar to query, we search for exact matches.
+    # Here, we also change the stringency of the query by increasing the search_tolerance, we accept more bins and thereby more profiles. 
     def query_extended(self, query_pattern: np.ndarray, feature_indices: list, search_tolerance=15):
         """
-        Not optimised , but outlines approach. lookup based on bit pattern at a limited set of indices; general pattern, existing in potentially many cells
-        suppose we don't care about 20% of the features, randomly selected
-
-        1 parameter is to sample more subspaces, the other is to change the stringency of the search, how many nearby buckets to look at.
-        """
-        
-        """create n queries where n is 10% of the number of features and find the approximate nearest neighbors
-        each query, the positions we dont care about, we randomly select a value from a normal distibution N(urow, std) basically sampling 
-        from the subspace that potential matches also lie in. That if we cover enough of the space, that we will apporximately get the neighbours 
-        with the gene expression profile.""" 
-
-        """in a second step, we do exact matching for the indices that we care about; objective is just to reduce the number of candidates"""
+        Not yet optimised, but outlines approach.
+        query_pattern: a vector of gene expression counts
+        feature_indices: list of indices for the genes that are important for defining the similarity search
+        search_tolerance: how many bits are allowed to differ between hash values
+        """ 
 
         num_features = query_pattern.shape[0]
         substitute_indices = list(set(range(num_features)) - set(feature_indices))
