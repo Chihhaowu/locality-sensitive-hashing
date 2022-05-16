@@ -12,7 +12,7 @@ In the data folder are the script to generate the simulated RNA-seq expression d
 Python 3.9.12
 
 ## Usage
-Example code to execute all the evaluations/tests described are present ***thoroughly documented*** in the script.
+Example code to execute all the evaluations/tests described are ***documented in the python script***.
 
 
 ## Reference
