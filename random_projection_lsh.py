@@ -174,6 +174,8 @@ class RandomProjectionLSH():
 
 class SupportFunctions:
 
+    # these functions help generate the normal vectors of the hyperplanes used for
+    # partitioning the space. Supports this implementation of random projection LSH.
     @staticmethod
     def sample_random_normal(dims: tuple)->np.ndarray:
         """
