@@ -178,21 +178,13 @@ class SupportFunctions:
     # partitioning the space. Supports this implementation of random projection LSH.
     @staticmethod
     def sample_random_normal(dims: tuple)->np.ndarray:
-        """
-        Return a one-dimensional array with numVal elements
-        sampled from a gaussian distribution
-        """
+        # return a one-dimensional array with n elements sampled from a gaussian distribution
         rng =  np.random.default_rng()
         vals = rng.standard_normal(dims)
         return vals
 
     @staticmethod
     def dense_gaussian(numFeatures, hash_length):
-        """
-        For the length of the hash value, get the orthogonal
-        vectors (normals) that when we multiply, obtain which
-        side of the random hyperplanes the point lies in 
-        """
         normal = SupportFunctions.sample_random_normal((numFeatures, hash_length))
         return normal
 
