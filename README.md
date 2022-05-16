@@ -10,8 +10,8 @@ The script implements locality sensitive hashing using SimHash hash function. Re
 Python 3.9.12
 
 ## Usage
-The code for all the evaluations/tests described are present in the main function. 
+The code for all the evaluations/tests described are present thoroughly documented in the script.
 
 ## Reference
-referenced https://github.com/dataplayer12/Fly-LSH to help implement SimHash
+referenced https://github.com/dataplayer12/Fly-LSH to help implement SimHash/random projection LSH
 referenced https://github.com/XuegongLab/DenseFly4scRNAseq/ to generate simulated scRNA-seq data
