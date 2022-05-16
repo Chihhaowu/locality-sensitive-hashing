@@ -196,39 +196,39 @@ if __name__ == "__main__":
     labels = data.iloc[:, -1]
 
     """
-    # sub pattern search
+    ###### sub pattern search ######
     test = RandomProjectionLSH(df, hash_length=128)
     q_pattern = df.iloc[0,:]
     # indices of features of query that we want exact matches for in the search
     feature_indices = np.random.default_rng().permutation(10000)[:8000]
     candidate_indices = test.query_extended(q_pattern, feature_indices)
     
-    # add new cell/expression profile to reference
+    ###### add new cell/expression profile to reference ######
     test = RandomProjectionLSH(df, hash_length=8)
     existingPattern = np.zeros(10000) # replace with any vector representing the expression profile of a new cell
     test.update_hash_table(existingPattern)
     
-    #single query; choose one cell from the reference as the query
+    ###### single query; choose one cell from the reference as the query ######
     lsh_data = RandomProjectionLSH(data=df, hash_length=64)
     candidates = lsh_data.query(3) # find the bins which potential candidates lie in
     exact_matches = lsh_data.exact_matching(select_index=3, candidate_indices=candidates, feature_indices=[]) # use exact matching; bitwise comparison of patterns
     
-    # evaluate LSH over different hash_lengths
+    ###### evaluate LSH over different hash_lengths ######
     for hash_length in [16,32,64,128,256,512,1024]: 
         simhash = RandomProjectionLSH(data=df, hash_length=hash_length, evaluation_labels=labels)
         print(f"CKS using hash length {hash_length} is: {simhash.evaluate_lsh()}")
     
-    # evaluate LSH query time over different hash lengths (optional exact matching; just linear scan)
+    ###### evaluate LSH query time over different hash lengths ######
     for hash_length in [32,64,128,512,1024]: 
         simhash = RandomProjectionLSH(data=df, hash_length=hash_length)
 
         start = time.time()
         for i in range(100):
             candidates = simhash.query(i)
-            #simhash.exact_matching(select_index=i, candidate_indices=candidates, feature_indices=[])
+            # simhash.exact_matching(select_index=i, candidate_indices=candidates, feature_indices=[])
         print(f"Time to query 100 patterns from 2000 cells without exact match from using model with hash length of {hash_length}: {time.time()-start}")
     
-    # evaluate LSH query time over different number of cells
+    ###### evaluate LSH query time over different number of cells ######
     numCells = 2000
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         simhash.query(i)
     print(f"Time to query 100 patterns from reference of {numCells} cells: {time.time()-start}")
    
-    ##### evaluate time to construct LSH over different number of cells
+    ###### evaluate time to construct LSH over different number of cells ######
     numCells = 500
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
