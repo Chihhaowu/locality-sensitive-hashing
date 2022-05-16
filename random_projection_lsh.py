@@ -196,6 +196,9 @@ if __name__ == "__main__":
     labels = data.iloc[:, -1]
 
     """
+    READ HERE: Below are examples that demonstrate how to use the create the LSH as well as use the functions 
+    for construction, searching, and evaluation.
+    
     ###### sub pattern search ######
     desc. refer to description above; here we randomly select 2000 features as those genes
     which expression counts are not relevant to determining similarity.
