@@ -197,58 +197,81 @@ if __name__ == "__main__":
 
     """
     ###### sub pattern search ######
-    test = RandomProjectionLSH(df, hash_length=128)
-    q_pattern = df.iloc[0,:]
-    # indices of features of query that we want exact matches for in the search
+    desc. refer to description above; here we randomly select 2000 features as those genes
+    which expression counts are not relevant to determining similarity.
+    
+    lsh_model = RandomProjectionLSH(df, hash_length=128)
+    query_pattern = df.iloc[0,:]
     feature_indices = np.random.default_rng().permutation(10000)[:8000]
-    candidate_indices = test.query_extended(q_pattern, feature_indices)
+    candidate_indices = lsh_model.query_extended(query_pattern, feature_indices)
+    ###### sub pattern search ######
     
-    ###### add new cell/expression profile to reference ######
-    test = RandomProjectionLSH(df, hash_length=8)
+    ###### add new cell/expression profile ######
+    desc. refer to description above.
+    
+    lsh_model = RandomProjectionLSH(df, hash_length=128)
     existingPattern = np.zeros(10000) # replace with any vector representing the expression profile of a new cell
-    test.update_hash_table(existingPattern)
+    lsh_model.update_hash_table(existingPattern)
+    ###### add new cell/expression profile ######
     
-    ###### single query; choose one cell from the reference as the query ######
-    lsh_data = RandomProjectionLSH(data=df, hash_length=64)
-    candidates = lsh_data.query(3) # find the bins which potential candidates lie in
-    exact_matches = lsh_data.exact_matching(select_index=3, candidate_indices=candidates, feature_indices=[]) # use exact matching; bitwise comparison of patterns
+    ###### query on the reference/expression matrix (also, exact matching) ######
+    desc. refer to descriptions above. Candidates are obtained by finding bins (corresponding to 
+    identical or near-identical hash values). Exact match is just scanning the vectors to find if
+    any matches are identical. To guarantee a match, the example uses an expression profile from 
+    the reference (here, the cell at index 3) to guarantee at least one match. However, it is easy 
+    to use hash a new expression profile an do the same search.
     
-    ###### evaluate LSH over different hash_lengths ######
+    lsh_model = RandomProjectionLSH(data=df, hash_length=64)
+    candidates = lsh_model.query(3) 
+    exact_matches = lsh_model.exact_matching(select_index=3, candidate_indices=candidates, feature_indices=[])
+    ###### query on the reference/expression matrix ######
+    
+    ###### evaluate LSH performance over different hash_lengths ######
+    desc. Perform five-fold cross validation and compute the CKS for the LSH
+    over different hash lengths.
+    
     for hash_length in [16,32,64,128,256,512,1024]: 
-        simhash = RandomProjectionLSH(data=df, hash_length=hash_length, evaluation_labels=labels)
-        print(f"CKS using hash length {hash_length} is: {simhash.evaluate_lsh()}")
+        lsh_model = RandomProjectionLSH(data=df, hash_length=hash_length, evaluation_labels=labels)
+        print(f"CKS using hash length {hash_length} is: {lsh_model.evaluate_lsh()}")
+    ###### evaluate LSH performance over different hash_lengths ######
     
     ###### evaluate LSH query time over different hash lengths ######
+    desc. Measuring time per 100 queries using different hash lengths. 
+    
     for hash_length in [32,64,128,512,1024]: 
-        simhash = RandomProjectionLSH(data=df, hash_length=hash_length)
-
+        lsh_model = RandomProjectionLSH(data=df, hash_length=hash_length)
         start = time.time()
         for i in range(100):
-            candidates = simhash.query(i)
-            # simhash.exact_matching(select_index=i, candidate_indices=candidates, feature_indices=[])
+            candidates = lsh_model.query(i)
+            # lsh_model.exact_matching(select_index=i, candidate_indices=candidates, feature_indices=[])
         print(f"Time to query 100 patterns from 2000 cells without exact match from using model with hash length of {hash_length}: {time.time()-start}")
+    ###### evaluate LSH query time over different hash lengths ######
     
-    ###### evaluate LSH query time over different number of cells ######
-    numCells = 2000
+    ###### evaluate time to construct LSH over different reference sizes ######
+    desc. Measure the time to query 100 expression profiles/cells with various
+    sizes of the reference/expression matrix.
+    
+    numCells = 1000
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
     labels_subset = labels.iloc[subset]
-
-    hash_length = 128
-    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length)
-
+    lsh_model = RandomProjectionLSH(data=df_subset, hash_length=128)
     start = time.time()
     for i in range(100):
-        simhash.query(i)
+        lsh_model.query(i)
     print(f"Time to query 100 patterns from reference of {numCells} cells: {time.time()-start}")
+    ###### evaluate LSH query time over different number of cells ######
    
-    ###### evaluate time to construct LSH over different number of cells ######
-    numCells = 500
+    ###### evaluate time to construct LSH over different reference sizes ######
+    desc. Measure the time it takes to construct the LSH with various sizes of the 
+    reference/expression matrix.
+    
+    numCells = 1000
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
     labels_subset = labels.iloc[subset]
-    hash_length = 128
     start = time.time()
-    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length)
+    lsh_model = RandomProjectionLSH(data=df_subset, hash_length=128)
     print(f"Time to construct the LSH model from reference of {numCells} cells: {time.time()-start}")
+    ###### evaluate time to construct LSH over different reference sizes ######
     """
