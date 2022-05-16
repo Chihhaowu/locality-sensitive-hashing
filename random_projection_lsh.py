@@ -108,7 +108,6 @@ class RandomProjectionLSH():
         feature_indices: list of indices for the genes that are important for defining the similarity search
         search_tolerance: how many bits are allowed to differ between hash values
         """ 
-
         num_features = query_pattern.shape[0]
         substitute_indices = list(set(range(num_features)) - set(feature_indices))
     
@@ -116,27 +115,24 @@ class RandomProjectionLSH():
         reference_stddev = np.std(self.data, axis=0)
 
         all_candidates = set()
-        for _ in range(100):
+        for _ in range(100): # arbitrarily select 100 more queries
             for idx in substitute_indices:
                 rand = np.random.default_rng().normal(reference_means[idx], reference_stddev[idx])
                 query_pattern[idx] = math.floor(rand)
 
-            query_hash = (query_pattern@self.weights) >= 0 # compute or lookup the hash value of a cell
+            query_hash = (query_pattern@self.weights) >= 0 
             
-            bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1)# bitwise, how much does the query hash value differ from other bins
-            restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance)# return the indices of the bins which difference is within defined tolerances
+            bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1) # same as in query
+            restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance)
             candidates_from_bins = [self.bins_whichCells[i] for i in restricted_bins]
             candidate_matches = reduce(np.union1d, candidates_from_bins)
             [all_candidates.add(match) for match in candidate_matches]
  
         return all_candidates
             
-
+    # effectively linear scan/bitwise comparision to evaluate which expression vector is matches 
+    # (either for the entire vector or at selected indices, for sub pattern search).
     def exact_matching(self, select_index: int, candidate_indices: np.ndarray, feature_indices: list):
-        """
-        looks in limited bins for exact pattern matches at specified positions, corresponding
-        to different features
-        """
         exact_matches = []
         compared_features = feature_indices if feature_indices else list(range(self.data_as_dataframe.shape[1]))
         pattern = self.data_as_dataframe.iloc[select_index,compared_features]
@@ -147,8 +143,12 @@ class RandomProjectionLSH():
 
         return exact_matches
 
-    # the following three evaluation methods are modified from 
-    # perform query operation on each entry and return the confusion matrix
+    """
+    The following three evaluation methods are consistent to those from https://github.com/XuegongLab/DenseFly4scRNAseq
+    to allow for comparision and validation of the implementation of LSH here
+    """
+    
+    # perform query and return the confusion matrix
     def compute_confusion_matrix(self, indices):
         cm = np.zeros((self.numLabels,self.numLabels))
         for idx in indices:
@@ -157,11 +157,13 @@ class RandomProjectionLSH():
             cm += confusion_matrix(true_label,query_assigned_label,labels=np.unique(self.labels))
         return cm
 
+    # compute Cohen's kappa statistic
     def cohens_kappa_score(self, matrix):
         po = matrix.trace()/np.sum(matrix)
         pe = sum(np.sum(matrix, axis=0)*np.sum(matrix, axis=1))/np.sum(matrix)/np.sum(matrix)
         return (po-pe)/(1-pe)
 
+    # five-fold cross validation
     def evaluate_lsh(self):
         CKS = 0
         for _ in range (5):
