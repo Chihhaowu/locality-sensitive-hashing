@@ -199,10 +199,9 @@ if __name__ == "__main__":
     READ HERE for USAGE: Below are examples that demonstrate how to use the create the LSH as well as use the functions 
     for construction, searching, and evaluation.
     
-    ###### construct the LSH model ######
+    ###### construct the LSH model; indexing input vectors to hashed vectors ######
     lsh_model = RandomProjectionLSH(data=df, hash_length=128)
-    ###### construct the LSH model ######
-     
+    ###### construct the LSH model; indexing input vectors to hashed vectors ######
     
     ###### sub pattern search ######
     desc. refer to description above; here we randomly select 2000 features as those genes
