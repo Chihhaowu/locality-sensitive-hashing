@@ -6,7 +6,7 @@
 
 The script implements locality sensitive hashing using SimHash hash function. Returns the indices of E, representing the cell(s) which exhibit expression profiles that resemble the query vector of gene expression counts. To complement this approximate nearest neighbors (ANNs) search algorithm, there is a also a simple exact match function that does bitwise comparision all returned candidates to find matching full or partial expression patterns.
 
-In the data folder are the script to generate the simulated RNA-seq expression data used in this project and a copy of the data itself from running the script.
+**scRNA-seq data** In the data folder are the script to generate the simulated RNA-seq expression data used in this project and a copy of the data itself from running the script.
 
 ## Requirements/Compatibility
 Python 3.9.12
