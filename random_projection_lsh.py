@@ -1,4 +1,5 @@
 import time
+import math
 import pandas as pd
 import numpy as np
 from functools import reduce
@@ -6,7 +7,7 @@ from sklearn.metrics import confusion_matrix, cohen_kappa_score
 
 class RandomProjectionLSH():
 
-    def __init__(self, data, hash_length, nnn, evaluation_labels=None):
+    def __init__(self, data, hash_length, evaluation_labels=None):
         
         # for functionality
         self.data_as_dataframe = data
@@ -14,10 +15,9 @@ class RandomProjectionLSH():
         self.data = data - np.mean(data, axis=1, keepdims=True) # with correction
         numFeatures = data.shape[1]
         self.weights = SupportFunctions.dense_gaussian(numFeatures, hash_length)
-        self.hashes = (self.data@self.weights)>0 # obtained by the dot product of each point to the normal of each hyperplane
-        self.nnn = nnn
+        self.hashes = (self.data@self.weights)>=0 # obtained by the dot product of each point to the normal of each hyperplane
         self.bin_hashes()
-        
+
         # for evaluation
         self.labels = evaluation_labels
         self.numLabels = np.unique(self.labels).shape[0]
@@ -39,10 +39,43 @@ class RandomProjectionLSH():
 
         self.cells_assignedToBins = {cell: bin for cell, bin in enumerate(hashBin)} # which bin has a cell been assigned to
         self.bins_whichCells = {bin: np.flatnonzero(hashBin == bin) for bin in range(numBins)} # which cells are present in each bin
+
+    """
+    given some new expression profiles, hash and obtain the encoded bit vector, then append it
+    to the table storing the bit vectors
+    """
+    def update_hash_table(self, new_pattern: np.ndarray):
+    
+        if new_pattern.size != self.weights.shape[0]:
+            raise ValueError("Invalid length, did not add new pattern to table")
+
+        corrected_count_vector = new_pattern - np.mean(new_pattern) # correct the input count vector
+        bv_new_pattern = (corrected_count_vector@self.weights) >= 0
+        new_cell = max(self.cells_assignedToBins.keys()) + 1
         
+        # use bitwise xor to find if hash value has previously been generated
+        i = 0
+        same_bv = False
+        while same_bv == False:
+            if i == self.distinct_hashes.shape[0]:
+                # if the hash value is new, then update the following
+                np.append(self.distinct_hashes, bv_new_pattern)
+                new_bin =  max(self.cells_assignedToBins.values()) + 1
+                self.cells_assignedToBins[new_cell] = new_bin 
+                self.bins_whichCells[new_bin] = np.array([new_cell])
+                return
+
+            same_bv = (self.distinct_hashes[i] ^ bv_new_pattern).sum() == 0
+            i += 1
+
+        # notice the index of the distinct hash corresponds to the bin number
+        bin = i-1
+        self.cells_assignedToBins[new_cell] = [bin]
+        self.bins_whichCells[bin] = np.append(self.bins_whichCells[bin], new_cell)
+       
     def query(self, select_index: int, search_tolerance=1):
         """
-        Multiprobe query in the form of searching using one of the rows as the query pattern
+        multibin query in the form of searching using one of the rows as the query pattern
         lookup-based; queries are guaranteed to have at least one match
         """
         query_hash_bin = self.cells_assignedToBins[select_index] # based on lookup, what is the bin/corresponding hash
@@ -50,13 +83,48 @@ class RandomProjectionLSH():
 
         bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1)# bitwise, how much does the query hash value differ from other bins
         restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance)# return the indices of the bins which difference is within defined tolerances
-        
         candidates_from_bins = [self.bins_whichCells[i] for i in restricted_bins]
-        candidate_matches = reduce(np.union1d, candidates_from_bins)# fix this if results are unexpected
-        
-        #candidate_matches = candidate_matches[1:self.nnn+1] # legacy; REMOVE
+        candidate_matches = reduce(np.union1d, candidates_from_bins)
 
         return candidate_matches
+
+    def query_extended(self, query_pattern: np.ndarray, feature_indices: list, search_tolerance=15):
+        """
+        Not optimised , but outlines approach. lookup based on bit pattern at a limited set of indices; general pattern, existing in potentially many cells
+        suppose we don't care about 20% of the features, randomly selected
+
+        1 parameter is to sample more subspaces, the other is to change the stringency of the search, how many nearby buckets to look at.
+        """
+        
+        """create n queries where n is 10% of the number of features and find the approximate nearest neighbors
+        each query, the positions we dont care about, we randomly select a value from a normal distibution N(urow, std) basically sampling 
+        from the subspace that potential matches also lie in. That if we cover enough of the space, that we will apporximately get the neighbours 
+        with the gene expression profile.""" 
+
+        """in a second step, we do exact matching for the indices that we care about; objective is just to reduce the number of candidates"""
+
+        num_features = query_pattern.shape[0]
+        substitute_indices = list(set(range(num_features)) - set(feature_indices))
+    
+        reference_means = np.mean(self.data, axis=0)
+        reference_stddev = np.std(self.data, axis=0)
+
+        all_candidates = set()
+        for _ in range(100):
+            for idx in substitute_indices:
+                rand = np.random.default_rng().normal(reference_means[idx], reference_stddev[idx])
+                query_pattern[idx] = math.floor(rand)
+
+            query_hash = (query_pattern@self.weights) >= 0 # compute or lookup the hash value of a cell
+            
+            bitwise_difference = (query_hash[np.newaxis,:] ^ self.distinct_hashes).sum(axis=1)# bitwise, how much does the query hash value differ from other bins
+            restricted_bins = np.flatnonzero(bitwise_difference <= search_tolerance)# return the indices of the bins which difference is within defined tolerances
+            candidates_from_bins = [self.bins_whichCells[i] for i in restricted_bins]
+            candidate_matches = reduce(np.union1d, candidates_from_bins)
+            [all_candidates.add(match) for match in candidate_matches]
+ 
+        return all_candidates
+            
 
     def exact_matching(self, select_index: int, candidate_indices: np.ndarray, feature_indices: list):
         """
@@ -80,7 +148,6 @@ class RandomProjectionLSH():
         for idx in indices:
             query_assigned_label = self.labels[self.query(idx)]
             true_label = np.array([self.labels[idx]]*query_assigned_label.shape[0])
-            #print(query_assigned_label, true_label) 
             cm += confusion_matrix(true_label,query_assigned_label,labels=np.unique(self.labels))
         return cm
 
@@ -121,24 +188,37 @@ class SupportFunctions:
 
 if __name__ == "__main__":
     
-    # load sample RNA sequencing expression dataset
+    # load sample RNA sequencing expression dataset; takes somewhat long to load each time
     data = pd.read_csv("/Users/dch/Downloads/SelfMapping.txt", delim_whitespace=True)
     df = data.iloc[:,:-1]
     labels = data.iloc[:, -1]
 
-    # single query
-    lsh_data = RandomProjectionLSH(data=df, hash_length=64, nnn=1)
+    """
+    # sub pattern search
+    test = RandomProjectionLSH(df, hash_length=128)
+    q_pattern = df.iloc[0,:]
+    # indices of features of query that we want exact matches for in the search
+    feature_indices = np.random.default_rng().permutation(10000)[:8000]
+    candidate_indices = test.query_extended(q_pattern, feature_indices)
+    
+    # add new cell/expression profile to reference
+    test = RandomProjectionLSH(df, hash_length=8)
+    existingPattern = np.zeros(10000) # replace with any vector representing the expression profile of a new cell
+    test.update_hash_table(existingPattern)
+    
+    #single query; choose one cell from the reference as the query
+    lsh_data = RandomProjectionLSH(data=df, hash_length=64)
     candidates = lsh_data.query(3) # find the bins which potential candidates lie in
     exact_matches = lsh_data.exact_matching(select_index=3, candidate_indices=candidates, feature_indices=[]) # use exact matching; bitwise comparison of patterns
     
     # evaluate LSH over different hash_lengths
     for hash_length in [16,32,64,128,256,512,1024]: 
-        simhash = RandomProjectionLSH(data=df, hash_length=hash_length, nnn=1, evaluation_labels=labels)
+        simhash = RandomProjectionLSH(data=df, hash_length=hash_length, evaluation_labels=labels)
         print(f"CKS using hash length {hash_length} is: {simhash.evaluate_lsh()}")
-   
-    # evaluate LSH query time over different hash lengths
+    
+    # evaluate LSH query time over different hash lengths (optional exact matching; just linear scan)
     for hash_length in [32,64,128,512,1024]: 
-        simhash = RandomProjectionLSH(data=df, hash_length=hash_length, nnn=1)
+        simhash = RandomProjectionLSH(data=df, hash_length=hash_length)
 
         start = time.time()
         for i in range(100):
@@ -153,22 +233,20 @@ if __name__ == "__main__":
     labels_subset = labels.iloc[subset]
 
     hash_length = 128
-    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length, nnn=1)
+    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length)
 
     start = time.time()
     for i in range(100):
         simhash.query(i)
     print(f"Time to query 100 patterns from reference of {numCells} cells: {time.time()-start}")
    
-    
     # evaluate time to construct LSH over different number of cells
     numCells = 500
     subset = np.random.choice(range(2000), numCells)
     df_subset = df.iloc[subset,:]
     labels_subset = labels.iloc[subset]
-
     hash_length = 128
     start = time.time()
-    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length, nnn=1)
+    simhash = RandomProjectionLSH(data=df_subset, hash_length=hash_length)
     print(f"Time to construct the LSH model from reference of {numCells} cells: {time.time()-start}")
-    
+    """
