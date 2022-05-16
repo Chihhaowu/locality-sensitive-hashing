@@ -12,7 +12,8 @@ In the data folder are the script to generate the simulated RNA-seq expression d
 Python 3.9.12
 
 ## Usage
-The code for all the evaluations/tests described are present thoroughly documented in the script.
+Example code to execute all the evaluations/tests described are present ***thoroughly documented*** in the script.
+
 
 ## Reference
 referenced https://github.com/dataplayer12/Fly-LSH to help implement SimHash/random projection LSH
