@@ -10,6 +10,7 @@ The script implements locality sensitive hashing using SimHash hash function. Re
 
 ## Requirements/Compatibility
 Python 3.9.12
+also, see requirements
 
 ## Usage
 Example code to execute all the evaluations/tests described are ***documented in the python script***.
